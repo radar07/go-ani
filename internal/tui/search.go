@@ -11,7 +11,6 @@ type searchModel struct {
 	spinner spinner.Model
 	loading bool
 	err     error
-	width   int
 }
 
 func newSearchModel() searchModel {

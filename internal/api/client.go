@@ -52,7 +52,7 @@ func (c *Client) doGraphQL(query string, variables map[string]interface{}) ([]by
 	if err != nil {
 		return nil, fmt.Errorf("send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("API returned status %d", resp.StatusCode)
@@ -89,11 +89,7 @@ func (c *Client) SearchAnime(query string, mode string) ([]SearchResult, error) 
 
 	results := make([]SearchResult, 0, len(resp.Data.Shows.Edges))
 	for _, show := range resp.Data.Shows.Edges {
-		results = append(results, SearchResult{
-			ID:                show.ID,
-			Name:              show.Name,
-			AvailableEpisodes: show.AvailableEpisodes,
-		})
+		results = append(results, SearchResult(show))
 	}
 	return results, nil
 }

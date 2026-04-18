@@ -36,7 +36,7 @@ func (m *mpvPlayer) Play(opts PlayOptions) error {
 
 	args = append(args, opts.URL)
 
-	cmd := exec.Command(m.binary, args...)
+	cmd := exec.Command(m.binary, args...) //nolint:gosec
 
 	if opts.NoDetach {
 		// Attached mode: inherit stdio, wait for exit
@@ -56,6 +56,6 @@ func (m *mpvPlayer) Play(opts PlayOptions) error {
 
 	fmt.Printf("▶️  mpv started (pid %d)\n", cmd.Process.Pid)
 	// Don't wait — let it run detached
-	go cmd.Wait()
+	go cmd.Wait() //nolint:errcheck
 	return nil
 }

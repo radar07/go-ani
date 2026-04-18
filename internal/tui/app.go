@@ -99,9 +99,10 @@ func NewAppModel(opts AppOpts) AppModel {
 func (m AppModel) Init() tea.Cmd {
 	var cmds []tea.Cmd
 
-	if m.state == StateSearch {
+	switch m.state {
+	case StateSearch:
 		cmds = append(cmds, m.search.Init())
-	} else if m.state == StateLoading {
+	case StateLoading:
 		// We have a pre-filled query — trigger search immediately
 		cmds = append(cmds, m.loading.Init())
 	}
@@ -242,8 +243,7 @@ func (m AppModel) updateResults(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m AppModel) updateEpisodes(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyMsg); ok {
 		switch msg.String() {
 		case "enter":
 			if !m.episodes.list.SettingFilter() {
@@ -322,8 +322,7 @@ func (m AppModel) updateLoading(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m AppModel) updateQuality(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyMsg); ok {
 		if msg.String() == "enter" {
 			if link := m.quality.selectedLink(); link != nil {
 				m.selectedLink = link
@@ -338,8 +337,7 @@ func (m AppModel) updateQuality(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m AppModel) updatePlayback(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyMsg); ok {
 		if msg.String() == "enter" {
 			return m.handlePlaybackAction()
 		}

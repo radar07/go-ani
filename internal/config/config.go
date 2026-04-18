@@ -41,7 +41,7 @@ func LoadConfig() *Config {
 // EnsureHistoryDir creates config directory if it doesn't exist
 func (c *Config) EnsureHistoryDir() error {
 	dir := filepath.Dir(c.HistoryPath)
-	return os.MkdirAll(dir, 0755)
+	return os.MkdirAll(dir, 0750)
 }
 
 func getEnv(key, defaultValue string) string {

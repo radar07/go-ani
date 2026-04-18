@@ -33,7 +33,7 @@ func (c *Client) fetchProviderLinks(url string) ([]VideoLink, error) {
 	if err != nil {
 		return nil, fmt.Errorf("fetch provider: %w", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("provider returned status %d", resp.StatusCode)
@@ -90,7 +90,7 @@ func parseMasterPlaylist(c *Client, master VideoLink) []VideoLink {
 	if err != nil {
 		return []VideoLink{master}
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

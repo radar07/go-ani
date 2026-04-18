@@ -6,18 +6,9 @@ var (
 	// Accent colors
 	colorPrimary   = lipgloss.Color("#b47eff") // purple
 	colorSecondary = lipgloss.Color("#ff79c6") // pink
-	colorSuccess   = lipgloss.Color("#50fa7b") // green
 	colorWarning   = lipgloss.Color("#f1fa8c") // yellow
 	colorError     = lipgloss.Color("#ff5555") // red
 	colorDim       = lipgloss.Color("#6272a4") // dim gray
-	colorSubtle    = lipgloss.Color("#44475a") // subtle bg
-
-	// Title bar
-	titleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#ffffff")).
-			Background(colorPrimary).
-			Padding(0, 1)
 
 	// Section headers
 	headerStyle = lipgloss.NewStyle().
@@ -35,9 +26,6 @@ var (
 	errorStyle = lipgloss.NewStyle().
 			Foreground(colorError).
 			Bold(true)
-
-	// Success text
-	successStyle = lipgloss.NewStyle().Foreground(colorSuccess)
 
 	// Highlighted / selected item
 	selectedStyle = lipgloss.NewStyle().

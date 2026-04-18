@@ -48,11 +48,11 @@ func (d resultDelegate) Render(w io.Writer, m list.Model, index int, item list.I
 	num := fmt.Sprintf("%d. ", index+1)
 
 	if isSelected {
-		fmt.Fprint(w, selectedStyle.Render("▸ "+num+title)+"\n")
-		fmt.Fprint(w, "    "+dimStyle.Render(desc))
+		fmt.Fprint(w, selectedStyle.Render("▸ "+num+title)+"\n") //nolint:errcheck
+		fmt.Fprint(w, "    "+dimStyle.Render(desc))              //nolint:errcheck
 	} else {
-		fmt.Fprint(w, "  "+num+textStyle.Render(title)+"\n")
-		fmt.Fprint(w, "    "+dimStyle.Render(desc))
+		fmt.Fprint(w, "  "+num+textStyle.Render(title)+"\n") //nolint:errcheck
+		fmt.Fprint(w, "    "+dimStyle.Render(desc))          //nolint:errcheck
 	}
 }
 

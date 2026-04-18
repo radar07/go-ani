@@ -35,9 +35,9 @@ func (d episodeDelegate) Render(w io.Writer, m list.Model, index int, item list.
 	label := fmt.Sprintf("Episode %s", ep.number)
 
 	if isSelected {
-		fmt.Fprint(w, selectedStyle.Render("▸ "+label))
+		fmt.Fprint(w, selectedStyle.Render("▸ "+label)) //nolint:errcheck
 	} else {
-		fmt.Fprint(w, "  "+textStyle.Render(label))
+		fmt.Fprint(w, "  "+textStyle.Render(label)) //nolint:errcheck
 	}
 }
 
@@ -76,8 +76,7 @@ func (m episodesModel) Init() tea.Cmd {
 }
 
 func (m episodesModel) Update(msg tea.Msg) (episodesModel, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
+	if msg, ok := msg.(tea.WindowSizeMsg); ok {
 		m.width = msg.Width
 		m.height = msg.Height
 		m.list.SetSize(msg.Width, msg.Height-4)

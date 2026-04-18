@@ -36,9 +36,9 @@ func (d qualityDelegate) Render(w io.Writer, m list.Model, index int, item list.
 	label := fmt.Sprintf("%s (%s)", qi.link.Quality, qi.link.Type)
 
 	if isSelected {
-		fmt.Fprint(w, selectedStyle.Render("▸ "+label))
+		fmt.Fprint(w, selectedStyle.Render("▸ "+label)) //nolint:errcheck
 	} else {
-		fmt.Fprint(w, "  "+textStyle.Render(label))
+		fmt.Fprint(w, "  "+textStyle.Render(label)) //nolint:errcheck
 	}
 }
 
@@ -75,8 +75,7 @@ func (m qualityModel) Init() tea.Cmd {
 }
 
 func (m qualityModel) Update(msg tea.Msg) (qualityModel, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
+	if msg, ok := msg.(tea.WindowSizeMsg); ok {
 		m.width = msg.Width
 		m.height = msg.Height
 		m.list.SetSize(msg.Width, msg.Height-4)

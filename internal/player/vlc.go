@@ -44,7 +44,7 @@ func (v *vlcPlayer) Play(opts PlayOptions) error {
 	args = append(args, "--play-and-exit")
 	args = append(args, opts.URL)
 
-	cmd := exec.Command(v.binary, args...)
+	cmd := exec.Command(v.binary, args...) //nolint:gosec
 
 	if opts.NoDetach {
 		cmd.Stdout = os.Stdout
@@ -62,6 +62,6 @@ func (v *vlcPlayer) Play(opts PlayOptions) error {
 	}
 
 	fmt.Printf("▶️  VLC started (pid %d)\n", cmd.Process.Pid)
-	go cmd.Wait()
+	go cmd.Wait() //nolint:errcheck
 	return nil
 }

@@ -61,8 +61,7 @@ func (m playbackModel) Init() tea.Cmd {
 }
 
 func (m playbackModel) Update(msg tea.Msg) (playbackModel, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	if msg, ok := msg.(tea.KeyMsg); ok {
 		switch msg.String() {
 		case "up", "k":
 			if m.cursor > 0 {

@@ -25,8 +25,7 @@ func (m loadingModel) Init() tea.Cmd {
 }
 
 func (m loadingModel) Update(msg tea.Msg) (loadingModel, tea.Cmd) {
-	switch msg.(type) {
-	case spinner.TickMsg:
+	if _, ok := msg.(spinner.TickMsg); ok {
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
