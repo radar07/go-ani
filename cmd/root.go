@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/radar07/go-ani/internal/api"
 	"github.com/radar07/go-ani/internal/config"
-	"github.com/radar07/go-ani/internal/player"
-	"github.com/radar07/go-ani/internal/prompt"
+	"github.com/radar07/go-ani/internal/tui"
 	"github.com/spf13/cobra"
 )
 
@@ -87,161 +87,59 @@ var downloadCmd = &cobra.Command{
 	RunE:  runDownload,
 }
 
-// searchAndSelect searches for anime and lets the user pick one.
-// Returns the selected result and its episode list.
-func searchAndSelect(client *api.Client, query string) (*api.SearchResult, []string, error) {
-	fmt.Printf("🔍 Searching for \"%s\" (%s)...\n\n", query, cfg.Mode)
-
-	results, err := client.SearchAnime(query, cfg.Mode)
-	if err != nil {
-		return nil, nil, fmt.Errorf("search failed: %w", err)
-	}
-	if len(results) == 0 {
-		return nil, nil, fmt.Errorf("no results found")
-	}
-
-	// Build display items
-	items := make([]string, len(results))
-	for i, r := range results {
-		epCount := r.AvailableEpisodes.Sub
-		if cfg.Mode == "dub" {
-			epCount = r.AvailableEpisodes.Dub
-		}
-		items[i] = fmt.Sprintf("%s (%d episodes)", r.Name, epCount)
-	}
-
-	idx, err := prompt.SelectFromList("Select anime", items)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	selected := &results[idx]
-	fmt.Printf("\n📺 Selected: %s\n", selected.Name)
-
-	// Fetch episodes
-	fmt.Println("   Fetching episodes...")
-	episodes, err := client.GetEpisodes(selected.ID, cfg.Mode)
-	if err != nil {
-		return nil, nil, fmt.Errorf("fetch episodes: %w", err)
-	}
-	if len(episodes) == 0 {
-		return nil, nil, fmt.Errorf("no episodes available")
-	}
-
-	return selected, episodes, nil
-}
-
 func runSearch(cmd *cobra.Command, args []string) error {
-	if len(args) == 0 {
-		return fmt.Errorf("please provide a search query")
-	}
-
 	query := strings.Join(args, " ")
 	client := api.NewClient()
 
-	selected, episodes, err := searchAndSelect(client, query)
-	if err != nil {
-		return err
+	opts := tui.AppOpts{
+		Client: client,
+		Cfg:    cfg,
+		Mode:   tui.ModeSearch,
+		Query:  query,
 	}
 
-	fmt.Printf("\n📋 Episodes for %s:\n", selected.Name)
-	// Display episodes in columns
-	for i, ep := range episodes {
-		fmt.Printf("  %4s", ep)
-		if (i+1)%10 == 0 {
-			fmt.Println()
-		}
-	}
-	if len(episodes)%10 != 0 {
-		fmt.Println()
+	model := tui.NewAppModel(opts)
+	var p *tea.Program
+
+	if query != "" {
+		p = tea.NewProgram(model)
+		go func() {
+			p.Send(tui.StartWithQuery(query)())
+		}()
+	} else {
+		p = tea.NewProgram(model)
 	}
 
-	return nil
+	_, err := p.Run()
+	return err
 }
 
 func runPlay(cmd *cobra.Command, args []string) error {
-	if len(args) == 0 {
-		return fmt.Errorf("please provide a search query")
-	}
-
 	query := strings.Join(args, " ")
 	client := api.NewClient()
 
-	selected, episodes, err := searchAndSelect(client, query)
-	if err != nil {
-		return err
+	opts := tui.AppOpts{
+		Client:  client,
+		Cfg:     cfg,
+		Mode:    tui.ModePlay,
+		Query:   query,
+		Episode: flagEpisode,
 	}
 
-	// Determine episode
-	epNo := flagEpisode
-	if epNo == "" {
-		// Show episode list and prompt
-		fmt.Printf("\n📋 Episodes (%d total):\n", len(episodes))
-		for i, ep := range episodes {
-			fmt.Printf("  %4s", ep)
-			if (i+1)%10 == 0 {
-				fmt.Println()
-			}
-		}
-		if len(episodes)%10 != 0 {
-			fmt.Println()
-		}
+	model := tui.NewAppModel(opts)
+	var p *tea.Program
 
-		input, err := prompt.ReadInput(fmt.Sprintf("\nEpisode number [1-%s]: ", episodes[len(episodes)-1]))
-		if err != nil {
-			return err
-		}
-		epNo = strings.TrimSpace(input)
+	if query != "" {
+		p = tea.NewProgram(model)
+		go func() {
+			p.Send(tui.StartWithQuery(query)())
+		}()
+	} else {
+		p = tea.NewProgram(model)
 	}
 
-	// Validate episode exists
-	found := false
-	for _, ep := range episodes {
-		if ep == epNo {
-			found = true
-			break
-		}
-	}
-	if !found {
-		return fmt.Errorf("episode %s not found", epNo)
-	}
-
-	// Fetch sources
-	fmt.Printf("\n🔗 Fetching sources for episode %s...\n", epNo)
-	sources, err := client.GetEpisodeSources(selected.ID, epNo, cfg.Mode)
-	if err != nil {
-		return fmt.Errorf("fetch sources: %w", err)
-	}
-
-	// Resolve to playable links
-	links, err := client.GetVideoLinks(sources)
-	if err != nil {
-		return fmt.Errorf("resolve links: %w", err)
-	}
-
-	// Select quality
-	link, err := api.SelectQuality(links, cfg.Quality)
-	if err != nil {
-		return fmt.Errorf("select quality: %w", err)
-	}
-
-	fmt.Printf("   Quality: %s | Type: %s\n", link.Quality, link.Type)
-
-	// Launch player
-	p, err := player.NewPlayer(cfg.Player)
-	if err != nil {
-		return fmt.Errorf("init player: %w", err)
-	}
-
-	title := fmt.Sprintf("%s - Episode %s", selected.Name, epNo)
-	fmt.Printf("\n▶️  Playing: %s [%s]\n", title, p.Name())
-
-	return p.Play(player.PlayOptions{
-		URL:      link.URL,
-		Title:    title,
-		Referrer: link.Referrer,
-		NoDetach: cfg.NoDetach,
-	})
+	_, err := p.Run()
+	return err
 }
 
 func runContinue(cmd *cobra.Command, args []string) error {
