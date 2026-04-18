@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/radar07/go-ani/internal/api"
 	"github.com/radar07/go-ani/internal/config"
 	"github.com/spf13/cobra"
 )
@@ -83,15 +85,34 @@ var downloadCmd = &cobra.Command{
 	RunE:  runDownload,
 }
 
-// Command implementations (placeholders for Phase 1)
-
 func runSearch(cmd *cobra.Command, args []string) error {
-	fmt.Println("🔍 Search command - Not implemented yet")
-	fmt.Printf("   Config: Player=%s, Quality=%s, Mode=%s\n",
-		cfg.Player, cfg.Quality, cfg.Mode)
-	if len(args) > 0 {
-		fmt.Printf("   Query: %v\n", args)
+	if len(args) == 0 {
+		return fmt.Errorf("please provide a search query")
 	}
+
+	query := strings.Join(args, " ")
+	client := api.NewClient()
+
+	fmt.Println("🔍 Searching for \"%s\" (%s)...\n\n", query, cfg.Mode)
+
+	results, err := client.SearchAnime(query, cfg.Mode)
+	if err != nil {
+		return fmt.Errorf("search failed: %w", err)
+	}
+
+	if len(results) == 0 {
+		fmt.Println("No results found.")
+		return nil
+	}
+
+	for i, r := range results {
+		epCount := r.AvailableEpisodes.Sub
+		if cfg.Mode == "dub" {
+			epCount = r.AvailableEpisodes.Dub
+		}
+		fmt.Printf("  %2d. %s (%d episodes)\n", i+1, r.Name, epCount)
+	}
+
 	return nil
 }
 
