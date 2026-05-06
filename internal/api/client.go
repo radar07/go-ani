@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -29,6 +30,44 @@ func NewClient() *Client {
 	return &Client{
 		httpClient: &http.Client{Timeout: 30 * time.Second},
 	}
+}
+
+func (c *Client) doGraphQLWithHash(query string, variables map[string]interface{}, hash string) ([]byte, error) {
+	// Build persisted query
+	varsBytes, _ := json.Marshal(variables)
+
+	ext := map[string]interface{}{
+		"persistedQuery": map[string]interface{}{
+			"version":    1,
+			"sha256Hash": hash,
+		},
+	}
+
+	extBytes, _ := json.Marshal(ext)
+
+	apiURLWithParams := fmt.Sprintf(
+		"%s?variables=%s&extensions=%s",
+		apiURL,
+		url.QueryEscape(string(varsBytes)),
+		url.QueryEscape(string(extBytes)),
+	)
+
+	req, err := http.NewRequest("GET", apiURLWithParams, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Referer", "https://youtu-chan.com")
+	req.Header.Set("Origin", "https://youtu-chan.com")
+	req.Header.Set("User-Agent", userAgent)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return io.ReadAll(resp.Body)
 }
 
 // doGraphQL sends a POST request to the GraphQL API and returns the response body
@@ -129,7 +168,12 @@ func (c *Client) GetEpisodes(showID string, mode string) ([]string, error) {
 
 // GetEpisodeSources fetches streaming sources for an episode, handling encryption
 func (c *Client) GetEpisodeSources(showID, episode, mode string) ([]EpisodeSource, error) {
-	const gql = `query($showId:String!,$translationType:VaildTranslationTypeEnumType!,$episodeString:String!){episode(showId:$showId translationType:$translationType episodeString:$episodeString){episodeString sourceUrls}}`
+	const gql = `query($showId:String!,$translationType:VaildTranslationTypeEnumType!,$episodeString:String!){
+		episode(showId:$showId translationType:$translationType episodeString:$episodeString){
+			episodeString
+			sourceUrls
+		}
+	}`
 
 	variables := map[string]interface{}{
 		"showId":          showID,
@@ -137,9 +181,18 @@ func (c *Client) GetEpisodeSources(showID, episode, mode string) ([]EpisodeSourc
 		"episodeString":   episode,
 	}
 
-	data, err := c.doGraphQL(gql, variables)
+	const queryHash = "d405d0edd690624b66baba3068e0edc3ac90f1597d898a1ec8db4e5c43c00fec"
+
+	data, err := c.doGraphQLWithHash(gql, variables, queryHash)
 	if err != nil {
-		return nil, fmt.Errorf("get episode sources: %w", err)
+		return nil, fmt.Errorf("persisted query failed: %w", err)
+	}
+
+	if !strings.Contains(string(data), "tobeparsed") {
+		data, err = c.doGraphQL(gql, variables)
+		if err != nil {
+			return nil, fmt.Errorf("fallback query failed: %w", err)
+		}
 	}
 
 	var resp graphqlEpisodeSourcesResponse
@@ -147,12 +200,9 @@ func (c *Client) GetEpisodeSources(showID, episode, mode string) ([]EpisodeSourc
 		return nil, fmt.Errorf("parse episode sources: %w", err)
 	}
 
-	// Handle encrypted response
 	if resp.Data.Tobeparsed != "" {
 		return decryptEpisodeSources(resp.Data.Tobeparsed)
 	}
-
-	// Plain response
 	return resp.Data.Episode.SourceUrls, nil
 }
 
