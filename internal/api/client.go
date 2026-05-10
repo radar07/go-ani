@@ -32,7 +32,7 @@ func NewClient() *Client {
 	}
 }
 
-func (c *Client) doGraphQLWithHash(query string, variables map[string]interface{}, hash string) ([]byte, error) {
+func (c *Client) doGraphQLWithHash(variables map[string]interface{}, hash string) ([]byte, error) {
 	// Build persisted query
 	varsBytes, _ := json.Marshal(variables)
 
@@ -65,7 +65,7 @@ func (c *Client) doGraphQLWithHash(query string, variables map[string]interface{
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	return io.ReadAll(resp.Body)
 }
@@ -183,7 +183,7 @@ func (c *Client) GetEpisodeSources(showID, episode, mode string) ([]EpisodeSourc
 
 	const queryHash = "d405d0edd690624b66baba3068e0edc3ac90f1597d898a1ec8db4e5c43c00fec"
 
-	data, err := c.doGraphQLWithHash(gql, variables, queryHash)
+	data, err := c.doGraphQLWithHash(variables, queryHash)
 	if err != nil {
 		return nil, fmt.Errorf("persisted query failed: %w", err)
 	}

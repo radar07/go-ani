@@ -71,9 +71,9 @@ type graphqlEpisodeSourcesResponse struct {
 	} `json:"data"`
 }
 
-type decryptedEpisodeResponse struct {
-	Episode struct {
-		EpisodeString string          `json:"episodeString"`
-		SourceUrls    []EpisodeSource `json:"sourceUrls"`
-	} `json:"episode"`
-}
+// type decryptedEpisodeResponse struct {
+// 	Episode struct {
+// 		EpisodeString string          `json:"episodeString"`
+// 		SourceUrls    []EpisodeSource `json:"sourceUrls"`
+// 	} `json:"episode"`
+// }
